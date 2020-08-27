@@ -11,9 +11,13 @@
                     <el-input type="text" v-model="ruleForm.cat_name" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item label="所属分类">
-                    <span>
-                        <el-cascader clearable v-model="value" :options="options" @change="handleChange"></el-cascader>
-                    </span>
+                        <el-cascader 
+                        clearable 
+                        :props="props"
+                        v-model="value" 
+                        :options="options" 
+                        @change="handleChange">
+                        </el-cascader>
 
 
                 </el-form-item>
@@ -25,7 +29,7 @@
                     <el-input type="text" v-model="ruleForm.keywords" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item label="跳转" prop="url">
-                    <el-input v-model.number="ruleForm.url"></el-input>
+                    <el-input v-model.number="ruleForm.url" autocomplete="off"></el-input>
                 </el-form-item>
                 <el-form-item class="btnform">
                     <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
@@ -38,31 +42,29 @@
     </div>
 </template>
 <script>
+import{
+    postCateCreateApi,
+    getCateCreateApi
+}from'@/api'
     export default {
+        created(){
+    console.log(111);
+    this.initData()
+    },
         data() {
 
             return {
                 value: [],
-                options: [{
-                        value: 'zhinan',
-                        label: '指南',
-                    },
-                    {
-                        value: 'zhinan',
-                        label: '指南',
-                        children: [{
-                            value: 'zhinan',
-                            label: '指南',
-                            children: [{
-                                value: 'zhinan',
-                                label: '指南',
-                            }]
-                        }]
-                    }
-                ],
+                // 级联选择器数据
+                props: {
+                    label: "cat_name",
+                    value: "cat_id",
+                },
+                options: [],
 
                 ruleForm: {
                     cat_name: '',
+                    parent_id: [],
                     keywords: '',
                     url: ''
                 },
@@ -78,11 +80,27 @@
                             message: '长度在 3 到 5 个字符',
                             trigger: 'blur'
                         }
+                    ],
+                    keywords:[
+                        {required:true,message:'请输入关键词',trigger:'blur'},
+                        {min:2,max:10,message:'长度2-10',trigger:'blur'}
                     ]
                 }
             }
         },
         methods: {
+            initData(index){
+                getCateCreateApi({
+                    pagenum: 1,
+                    pagesize: 1000,
+                    level: 2
+                })
+                .then(res=>{
+                    // console.log(res)
+                    this.options=res.data.list
+                    console.log(this.options[index])
+                })
+            },
             handleChange(value) {
                 console.log(value);
             },
@@ -94,7 +112,20 @@
             submitForm(formName) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
-                        alert('submit!');
+                        postCateCreateApi({
+                            cat_name: this.ruleForm.cat_name,
+                            parent_id: this.ruleForm.parent_id[this.ruleForm.parent_id.length-1],
+                            keywords: this.ruleForm.keywords,
+                            url: this.ruleForm.url
+                        }).then(res => {
+                        if (res.meta.state == 201)
+                        {
+                            this.$message.success(res.meta.msg);
+                            this.$router.push({path:'/goods/cate'})
+                        } else {
+                            this.$message.error(res.meta.msg);
+                        }
+                    })
                     } else {
                         console.log('error submit!!');
                         return false;

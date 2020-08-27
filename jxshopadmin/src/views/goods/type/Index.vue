@@ -19,12 +19,12 @@
             stripe
             style="width: 100%">
             <el-table-column
-            prop="id"
+            prop="cat_id"
             label="编号"
             width="180">
             </el-table-column>
             <el-table-column
-            prop="catename"
+            prop="cat_name"
             label="类型名称"
             width="180">
             </el-table-column>
@@ -32,6 +32,9 @@
                 <template slot-scope="scope">
                     <el-switch
                         v-model="scope.row.state"
+                        active-value="1"
+                        inactive-value="0"
+                        @change="changeFn(scope.row)"
                         active-color="#13ce66"
                         inactive-color="#ff4949">
                     </el-switch>
@@ -41,8 +44,8 @@
                 <template slot-scope="scope">
                     <el-row>
                         <el-button type="primary" icon="el-icon-edit" circle>属性列表</el-button>
-                        <el-button type="primary" icon="el-icon-edit" circle @click="editFn(scope.row.id,scope.row)"></el-button>
-                        <el-button type="danger" icon="el-icon-delete" circle @click="delFn(scope.row)"></el-button>
+                        <el-button type="primary" icon="el-icon-edit" circle @click="editFn(scope.row.cat_id,scope.row)"></el-button>
+                        <el-button type="danger" icon="el-icon-delete" circle @click="delFn(scope.row.cat_id)"></el-button>
                     </el-row>
                 </template>
             </el-table-column>
@@ -52,10 +55,10 @@
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
             :current-page="currentPage4"
-            :page-sizes="[100, 200, 300, 400]"
-            :page-size="100"
+            :page-sizes="[2, 4, 6, 8]"
+            :page-size="pagesize"
             layout="total, sizes, prev, pager, next, jumper"
-            :total="400">
+            :total="tableDataTotal">
         </el-pagination>
       </el-card>
 
@@ -74,18 +77,63 @@
     <!-- /form -->
   <span slot="footer" class="dialog-footer">
     <el-button @click="isShowEditTK = false">取 消</el-button>
-    <el-button type="primary" @click="isShowEditTK = false">确 定</el-button>
+    <el-button type="primary" @click="submitEditFn">确 定</el-button>
   </span>
 </el-dialog>
 </div>
 </template>
 <script>
+//导入接口
+import {
+  getGoodsTypeApi,
+  deleteGoodsTypeApi,
+  putGoodsTypeStateApi,
+  putGoodsTypeApi
+}from '@/api'
+
+
+
+//导出数据
   export default {
     methods: {
+      //编辑弹框触发
+      submitEditFn(){
+        //隐藏弹框
+        this.isShowEditTK=false,
+        //异步请求
+        putGoodsTypeApi(this.ruleForm)
+        .then(res=>{
+          if(res.meta.state==200){
+            this.$message.success(res.meta.msg)
+            this.initData()
+          }else{
+            this.$message.error(res.meta.msg)
+          }
+        })
+      },
+      //切换状态
+        changeFn(row){
+          putGoodsTypeStateApi({
+            type_id:row.cat_id,
+            state:row.state,
+          })
+          .then(res=>{
+            if(res.meta.state==200){
+              console.log(res.meta.msg)
+              this.$message.success(res.meta.msg)
+              this.initData()
+            }else{
+              console.log(res.meta.msg)
+              this.$message.error(res.meta.msg)
+            }
+          })
+        },
+
         //编辑
         editFn(id,row){
             //默认数据显示
-            this.ruleForm.type_name = row.catename
+            this.ruleForm.type_name = row.cat_name
+            this.ruleForm.type_id=row.cat_id
             //显示编辑弹框
             this.isShowEditTK=true
         },
@@ -94,24 +142,36 @@
             // if(confirm('确定删除吗?')){
             //     alert('待发送异步请求'+id)
             // }
+
+
             this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
-                confirmButtonText: '确定',
-                cancelButtonText: '取消',
-                type: 'warning'
-                }).then(() => {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
                     //发送异步请求
+                deleteGoodsTypeApi({
+                  type_id:id
+                }).then(res=>{
+                  if(res.meta.state==200){
 
                     //成功在提示
-                this.$message({
-                    type: 'success',
-                    message: '删除成功!'
-                });
-                }).catch(() => {
-                this.$message({
-                    type: 'info',
-                    message: '已取消删除'
-                });          
-                });
+                      this.$message({
+                          type: 'success',
+                          message: '删除成功!'
+                      });
+
+                      this.initData()
+                  }else{
+                    this.$message.error(res.meta.msg)
+                  }
+                })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          });          
+        });
         },
         createFn(){
             this.$router.push({path:'/goods/type/create'})
@@ -120,7 +180,8 @@
         console.log(`每页 ${val} 条`);
         },
         handleCurrentChange(val) {
-        console.log(`当前页: ${val}`);
+        this.pagenum=val
+        this.initData()
         },
         
       handleClose(done) {
@@ -129,13 +190,49 @@
             done();
           })
           .catch(_ => {});
+      },
+      initData(){
+        //显示loading
+        const loading=this.$loading({
+          lock:true,
+          text:'Loading',
+          spinner:'el-icon-loading',
+          background:'rgba(0,0,0,0.7)'
+        })
+        //发送请求
+        getGoodsTypeApi({
+          //pagenum:1
+          //pagenum:2
+          //为了便于后期维护，以后所有接口参数
+          //必须放到模型中
+          pagenum:this.pagenum,
+          pagesize:this.pagesize,
+        })
+        .then(res=>{
+          //隐藏loading
+          loading.close()
+          // console.log(res)
+          this.tableData=res.data.list
+          this.tableDataTotal=parseInt(res.data.total)
+        })
       }
     },
-
+    created(){
+      //getGoodsTypeApi
+      //明确：逻辑上这边直接发送异步请求
+      //但是：为了后期便于维护，例如分页，搜索继续发送异步请求
+      //因为：是同一个接口，只不过参数不同
+      //所以：封装
+      this.initData()
+    },
     data() {
       return {
+        //列表参数
+        pagenum:1,
+        pagesize:2,
 
-        //编辑表单弹框隐藏显示
+
+        //表单编辑弹框隐藏显示
           isShowEditTK:false,
             //表单编辑数据
             ruleForm:{
@@ -156,23 +253,9 @@
             currentPage3: 5,
             currentPage4: 4,
 
-        tableData: [{
-          id:1,
-          catename: '手机',
-          state: true,
-        }, {
-          id:2,
-          catename: '电脑',
-          state: false,
-        }, {
-          id:3,
-          catename: '袜子',
-          state: true,
-        }, {
-          id:4,
-          catename: '耳机',
-          state: true,
-        }]
+        tableDataTotal:0,
+
+        tableData: []
       }
     }
   }

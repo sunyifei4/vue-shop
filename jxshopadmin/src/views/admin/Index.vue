@@ -116,6 +116,7 @@
         <div class="content">
             <!-- 显示当前组件子级 -->
             <router-view />
+            <!-- <img src="./welcome.jpg" alt=""> -->
         </div>
     </div>
     <!-- /右侧 -->
@@ -272,7 +273,6 @@
     //main
     .main{
         flex:1;//使用剩余空间 前提父得弹性盒布局
-        background: red;
         overflow-y: scroll;
 
         //top
@@ -280,7 +280,6 @@
             width: 100%;
             height: 50px;
             margin-bottom: 30px;
-            background: blue;
             box-shadow: 0 1px 4px rgba(0,21,41,0.08);
             display: flex;
             justify-content:space-between;
@@ -288,7 +287,6 @@
             .l {
                 width: 300px;
                 height: 100%;
-                background: yellow;
                 overflow: hidden;
                 .btn{
                     height: 50px;
@@ -308,7 +306,6 @@
                     width: 200px;
                     height: 50px;
                     line-height: 50px;
-                    background: orange;
                     float: left;
                 }
                 .breadcrumb .bcx{
@@ -318,7 +315,6 @@
             .r{
                 width: 240px;
                 height: 100%;
-                background: pink;
                 position: relative;
             }
         }
@@ -329,6 +325,13 @@
             min-height: 100px;
             margin: auto;
             background: green;
+            img{
+            position: absolute;
+            left: 0;right: 0;
+            top: 0;bottom: 0;
+            margin: auto;
+            width: 500px;
+        }
             
         }
     }

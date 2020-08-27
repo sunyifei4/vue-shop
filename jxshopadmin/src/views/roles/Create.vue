@@ -7,11 +7,11 @@
             </div>
             <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="100px"
                 class="demo-ruleForm">
-                <el-form-item label="角色名称" prop="cat_name">
-                    <el-input type="text" v-model="ruleForm.cat_name" autocomplete="off"></el-input>
+                <el-form-item label="角色名称" prop="role_name">
+                    <el-input type="text" v-model="ruleForm.role_name" autocomplete="off"></el-input>
                 </el-form-item>
-                <el-form-item label="角色描述" prop="cat_name">
-                    <el-input type="password" v-model="ruleForm.cat_name" autocomplete="off"></el-input>
+                <el-form-item label="角色描述" prop="role_describe">
+                    <el-input type="password" v-model="ruleForm.role_describe" autocomplete="off"></el-input>
                 </el-form-item>
                 
                 <el-form-item class="btnform">
@@ -25,34 +25,19 @@
     </div>
 </template>
 <script>
+import{postRolesCreateApi}from'@/api'
     export default {
         data() {
 
             return {
                 value: [],
-                options: [{
-                        value: 'zhinan',
-                        label: '指南',
-                    },
-                    {
-                        value: 'zhinan',
-                        label: '指南',
-                        children: [{
-                            value: 'zhinan',
-                            label: '指南',
-                            children: [{
-                                value: 'zhinan',
-                                label: '指南',
-                            }]
-                        }]
-                    }
-                ],
-
+                prop:{
+                    role_name:[],
+                    role_describe:[]
+                },
                 ruleForm: {
-                    question: '',
-                    cat_name: '',
-                    keywords: '',
-                    url: ''
+                    role_name:'',
+                    role_describe:'',
                 },
                 rules: {
                      question:[
@@ -85,7 +70,15 @@
             submitForm(formName) {
                 this.$refs[formName].validate((valid) => {
                     if (valid) {
-                        alert('submit!');
+                        postRolesCreateApi({
+                            role_name:this.ruleForm.role_name,
+                            role_describe:this.ruleForm.role_describe,
+                        })
+                        .then(res=>{
+                            this.$router.push({
+                                    path: '/users'
+                                })
+                        })
                     } else {
                         console.log('error submit!!');
                         return false;

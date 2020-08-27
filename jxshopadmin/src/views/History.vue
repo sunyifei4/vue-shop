@@ -5,18 +5,19 @@
             <span>访客记录</span>
         </div>
         <div class="ssrq">
-              <div>
+            <div>
                   <el-input
                       placeholder="请输入内容"
-                      v-model="input"
+                      v-model="search"
                       clearable
-                      style="height:40px;width:243px">
+                      style="height:40px;width:243px">                      
+                    <el-button @click="searchFn" slot="append" icon="el-icon-search"></el-button>
                   </el-input>
-                <el-button class="iconfont icon-fangdajing" plain></el-button>
             </div>
             
             <div class="block">
                 <el-date-picker
+                @change="dateSearchFn"
                 v-model="value1"
                 type="daterange"
                 range-separator="至"
@@ -30,49 +31,90 @@
             stripe
             style="width: 100%">
             <el-table-column
-            prop="date"
+            prop="id"
             label="编号"
             width="180">
             </el-table-column>
             <el-table-column
-            prop="name"
-            label="用户"
+            prop="city"
+            label="城市"
             width="180">
             </el-table-column>
             <el-table-column
-            prop="date"
-            label="登录时间"
+            prop="ip"
+            label="登录IP"
             width="180">
             </el-table-column>
             <el-table-column
-            prop="address"
+            prop="login_time"
             label="上一次登录时间">
+            </el-table-column>
+            <el-table-column
+            prop="username"
+            label="登录用户">
             </el-table-column>
         </el-table>
         <el-pagination
             @size-change="handleSizeChange"
             @current-change="handleCurrentChange"
             :current-page="currentPage4"
-            :page-sizes="[100, 200, 300, 400]"
-            :page-size="100"
+            :page-sizes="[10, 20, 30, 40]"
+            :page-size="pagesize"
             layout="total, sizes, prev, pager, next, jumper"
-            :total="400">
+            :total="tableDataTotal">
         </el-pagination>
     </el-card>
 </div>
 </template>
 <script>
+import{
+  getHistoryApi
+}from '@/api'
+
 export default {
+  created(){
+    console.log(111);
+    this.initData()
+  },
   methods:{
+    dateSearchFn(){
+      this.start_time = this.value1[0] || ''
+      this.end_time = this.value1[1] || ''
+      this.initData()
+    },
+    searchFn(){
+      this.initData()
+    },
+    //默认数据
+    initData(){
+      getHistoryApi({
+        pagenum:this.pagenum,
+        pagesize:this.pagesize,
+        start_time:this.start_time,
+        end_time:this.end_time,
+        uname:this.search,
+      })
+      .then(res=>{
+        console.log(res)
+        this.tableData=res.data.list
+        this.tableDataTotal=parseInt(res.data.total)
+      })
+    },
+
     handleSizeChange(val) {
         console.log(`每页 ${val} 条`);
         },
         handleCurrentChange(val) {
-        console.log(`当前页: ${val}`);
+        // console.log(`当前页: ${val}`);
+        this.pagenum=val
+        this.initData()
         },
   },
     data() {
       return {
+
+
+
         //编辑表单弹框隐藏显示
           isShowEditTK:false,
             //表单编辑数据
@@ -93,6 +135,13 @@ export default {
             currentPage2: 5,
             currentPage3: 5,
             currentPage4: 4,
+        tableDataTotal:0,
+
+        pagesize:10,
+        pagenum:1,
+        uname:'',
+        end_time:'',
+        start_time:'',
 
         tableData: [{
           id:1,
@@ -111,7 +160,7 @@ export default {
           catename: '耳机',
           state: true,
         }],
-        input: '',
+        search: '',
         value1: '',
         tableData: [{
           date: '2016-05-02',

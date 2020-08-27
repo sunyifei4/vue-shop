@@ -36,15 +36,59 @@
             <el-input type="password" prefix-icon="el-icon-lock" placeholder="请输入密码" show-password clearable  v-model.number="ruleForm.pwd"></el-input>
         </el-form-item>
         <el-form-item>
-            <el-button type="primary" @click="submitForm('ruleForm')">提交</el-button>
+            <el-button class="zy" type="primary" @click="submitForm('ruleForm')">提交</el-button>
         </el-form-item>
+        <el-form-item>
+            <el-button class="zy" type="primary" @click="smdl()">扫码登录</el-button>
+        </el-form-item>
+        <el-form-item>
+            <el-button class="zy" type="primary" @click="dxdl()">短信登录</el-button>
+        </el-form-item>
+        <el-dialog
+        :visible.sync="isnoShowEditTK"
+        width="30%"
+        :before-close="handleClose">
+        <el-form ref="form" :model="dxdlsj" label-width="100px">
+          <el-form-item label="请输入号码">
+            <el-input v-model="dxdlsj.mobile" placeholder></el-input>
+            <el-button type="primary"  @click="hqyzm">获取验证码</el-button>
+          </el-form-item>
+          <el-form-item label="请输入验证码">
+            <el-input v-model="dxdlsj.code" placeholder></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="onSubmit">立即创建</el-button>
+            <el-button>取消</el-button>
+          </el-form-item>
+        </el-form>
+        </el-dialog>
+        <el-dialog
+        :visible.sync="isShowEditTK"
+        width="12%"
+        :before-close="handleClose">
+        <vue-qr :logo-src="logoSrc"
+                :size="191"
+                :margin="0"
+                :auto-color="true"
+                :dot-scale="1"
+                :text="appSrc"/>
+        </el-dialog>
 </el-form>
 </div>
 </template>
 <script>
+import {
+  postUsersLogin,
+  postQrCheck,
+  postSmsSend,
+  postSmsLogin
+} from "@/api";
+import VueQr from 'vue-qr';
   export default {
+    components:{
+      VueQr
+    },
     data() {
-
         let checkUname=(rule,value,callback)=>{
             //value就是当前用户输入的内容
             //成功了-别弹框 而是 callback();
@@ -60,12 +104,24 @@
         };
 
       return {
+        dxdlsj:{
+          mobile:'',
+          code:''
+        },
+        isnoShowEditTK:false,
+        isShowEditTK:false,
+        logoSrc:"",
+        appSrc:'www.baidu.com',
         //密保问题
         answer:[
             {value:'你奶奶的名字叫什么',label:'你奶奶的名字叫什么'},
             {value:'你爸爸的名字叫什么',label:'你爸爸的名字叫什么'},
-            {value:'你其中一位老师的名字',label:'你其中一位老师的名字'},
+            {value:'您其中一位老师的名字',label:'您其中一位老师的名字'},
         ],
+        url1:'',
+        url2:'https://open.weixin.qq.com/connect/oauth2/authorize?appid=wxed58e834201d0894&redirect_uri=http://kg.zhaodashen.cn/v2/qr/login.php&response_type=code&scope=snsapi_base&state=',
+        url3:'&connect_redirect=1#wechat_redirect',
+        url4:'',
         //表单数据
         ruleForm: {
           question: '',
@@ -103,6 +159,70 @@
       };
     },
     methods: {
+      hqyzm(){
+        postSmsSend({
+          mobile:this.dxdlsj.mobile
+        })
+      },
+      onSubmit(){
+        postSmsLogin({
+          mobile:this.dxdlsj.mobile,
+          code:this.dxdlsj.code
+        }).then(res=>{
+          if(res.meta.state==200){
+            this.$message.success('登陆成功')
+            this.$router.push({
+                    path: '/'
+                })
+          }else{
+            this.$message.erroe(res.meta.msg)
+            }
+        })
+      },
+        dxdl(){
+          this.isnoShowEditTK=true
+        },
+        handleClose(done) {
+            this.$confirm('确认关闭？')
+            .then(_ => {
+                done();
+            })
+            .catch(_ => {});
+        },
+        uuid() {
+            var s = [];
+            var hexDigits = "0123456789abcdef";
+            for (var i = 0; i < 36; i++) {
+              s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+            }
+            s[14] = "4"; // bits 12-15 of the time_hi_and_version field to 0010
+            s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1); // bits 6-7 of the clock_seq_hi_and_reserved to 01
+            s[8] = s[13] = s[18] = s[23] = "-";
+
+            var uuid = s.join("");
+            return (new Date).getTime() + "-" + uuid;
+          },
+      smdl(){
+        this.url4=this.uuid()
+        this.url1=this.url2+this.url4+this.url3
+        this.appSrc=this.url1
+        console.log(this.url1)
+        this.isShowEditTK=true
+        var t
+        t=setInterval(res => {
+          postQrCheck({
+            state:this.url4
+          })
+          .then(res=>{
+            if(res.meta.state==200){
+              clearInterval="t"
+              this.$router.push({
+                    path: '/'
+                })
+            }
+          })
+        }, 1000);
+      },
       submitForm(formName) {
           //思考：以前如何获取DOM
           //回答：1 给标签加ID属性，2 通过doucment.qs('#id属性值')  来获取
@@ -114,7 +234,19 @@
           //举例：let a=1;console.log(a)
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            alert('submit!');
+            postUsersLogin(this.ruleForm)
+            .then(res=>{
+              if(res.meta.state==200){
+                this.$message.success('登陆成功')
+                localstorage.setItem('uname',res.data.uname)
+                localstorage.setItem('roleName',res.data.roleName)
+                localstorage.setItem('token',res.data.token)
+                this.$router.push({path:'/'})
+              }else{
+                this.$message.error(res.meta.msg)
+              }
+            })
+            // alert('submit!');
             //后期发送异步请求
           } else {
               //失败不用管，因为elementui有自己的错误提示机制
@@ -137,12 +269,12 @@
     align-items: center;
 
     //el-form
-    .el-form{
+    .demo2{
         width: 300px;
         height: 372px;
 
         h1{text-align: center;color: #fff;}
-        .el-select,.el-button{width: 100%;}
+        .el-select,.zy{width: 100%;}
     }
 }
 </style>

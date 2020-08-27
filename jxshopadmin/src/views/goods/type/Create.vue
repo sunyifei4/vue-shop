@@ -24,6 +24,9 @@
 </div>
 </template>
 <script>
+import{
+    postGoodsTypeApi,
+}from '@/api'
 export default {
     data(){
         return{
@@ -47,7 +50,17 @@ export default {
             this.$refs[refName].validate(isSuccess=>{
                 if(isSuccess){
                     // alert('待发送异步请求')
-                    this.$message.success('待发送异步请求')
+                    // this.$message.success('待发送异步请求')
+                    postGoodsTypeApi(this.ruleForm)
+                    .then(res=>{
+                        if(res.meta.state==201){
+                            this.$message.success(res.meta.msg)
+                            //添加成功后跳转
+                            this.$router.push({path:'/goods/type'})
+                        }else{
+                            this.$message.error(res.meta.msg)
+                        }
+                    })
                 }
             })
         },

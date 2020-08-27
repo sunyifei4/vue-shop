@@ -8,6 +8,11 @@ import store from './store'
 Vue.config.productionTip = false
 Vue.use(ElementUI);
 
+
+// 配置 混入
+import '@/utils/mixin.js'  
+import '@/utils/filters.js'  
+
 //配置全局初始化样式
 import '@/assets/css/reset.scss';
 

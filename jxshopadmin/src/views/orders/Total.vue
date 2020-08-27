@@ -13,8 +13,13 @@
 
                 </el-input>
                 </div>
-                <el-date-picker v-model="value1" type="daterange" range-separator="至" start-placeholder="开始日期"
-                    end-placeholder="结束日期">
+                <el-date-picker 
+                @change="dateSearchFn"
+                v-model="value1" 
+                type="daterange" 
+                range-separator="至" 
+                start-placeholder="开始日期"
+                end-placeholder="结束日期">
                 </el-date-picker>
             </div>
          <div id="myChart" :style="{width: '1593px', height: '400px'}"></div>
@@ -22,8 +27,12 @@
     </div>
 </template>
 <script>
+import{getOrdersTotal}from'@/api'
 import echarts from 'echarts'
     export default {
+        created(){
+            this.initData()
+        },
         data() {
 
             return {
@@ -34,47 +43,43 @@ import echarts from 'echarts'
                 currentPage2: 5,
                 currentPage3: 5,
                 currentPage4: 4,
-                tableData: [{
-                    id: "1",
-                    uname: '王小虎',
-                    start_time: '2020-08-21 20:06:44',
-                    end_time: "2020-08-21 20:06:44",
-                    order_status:"已完成",
-                    shipping_status:"已发货",
-                    pay_status:"已完成"
-
-
-                }, {
-                    id: "2",
-                    uname: '王小虎',
-                    start_time: '2020-08-21 20:06:44',
-                    end_time: "2020-08-21 20:06:44",
-                    order_status:"已完成",
-                    shipping_status:"已发货",
-                    pay_status:"已完成"
-                }, {
-                    id: "3",
-                    uname: '王小虎',
-                    start_time: '2020-08-21 20:06:44',
-                    end_time: "2020-08-21 20:06:44",
-                    order_status:"已完成",
-                    shipping_status:"已发货",
-                    pay_status:"已完成"
-                }, {
-                    id: "4",
-                    uname: '王小虎',
-                    start_time: '2020-08-21 20:06:44',
-                    end_time: "2020-08-21 20:06:44",
-                    order_status:"已完成",
-                    shipping_status:"已发货",
-                    pay_status:"已完成"
-                }]
+                title:[],
+                data:[],
+                start_time:'',
+                end_time:'',
+                value1:'',
+                ruleForm: [
+                    
+                ]
             }
         },
          mounted(){
             this.drawLine();
         },
         methods: {
+            dateSearchFn(){
+                this.start_time = this.value1[0] || ''
+                this.end_time = this.value1[1] || ''
+                this.initData()
+            },
+            initData(){
+                getOrdersTotal({
+                    start_time:this.start_time,
+                    end_time:this.end_time
+                })
+                .then(res=>{
+                    console.log(res)
+                    this.title=[]
+                    this.data=[]
+                    res.data.title.forEach((item,index) => {
+                        this.title[index]=item
+                    });
+                    res.data.data.forEach((item,index) => {
+                        this.data[index]=parseInt(item)
+                    });
+                    this.drawLine();
+                })
+            },
             drawLine(){
         // 基于准备好的dom，初始化echarts实例
         let myChart = echarts.init(document.getElementById('myChart'))
@@ -86,13 +91,13 @@ import echarts from 'echarts'
                 data:['销量']
             },
             xAxis: {
-                data: ["一月","二月","三月","四月","五月","六月"]
+                data: this.title
             },
             yAxis: {},
             series: [{
                 name: '销量',
                 type: 'bar',
-                data: [30.00, 1836.10, 5038.00, 35, 2015.00, 553866.00]
+                data: this.data
             }]
         });
     },
